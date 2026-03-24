@@ -7,7 +7,7 @@
 ## 폴더 구조
 
 ```
-clip_regression/
+clip_tactile/
 │
 ├── prepare_data.py          # 데이터 셋업 (심볼릭 링크 or 복사)
 ├── requirements.txt
@@ -30,6 +30,17 @@ clip_regression/
 ├── evaluate.py              # regression 평가
 ├── contrastive_train.py     # contrastive 학습
 ├── contrastive_eval.py      # retrieval 평가
+├── benchmark.py             # 모델 벤치마크
+├── plot_loss.py             # 학습 loss 시각화
+├── visualize.py             # 결과 시각화
+│
+├── md_file/                 # 프로젝트 문서
+│   ├── CLAUDE.md
+│   ├── contrastive_explanation.md
+│   ├── execution_flow.md
+│   ├── finetuning_strategy.md
+│   ├── multi_contact_comparison.md
+│   └── multi_contact_project_design.md
 │
 ├── data/                    # prepare_data.py로 생성
 │   ├── train/images/
@@ -41,7 +52,19 @@ clip_regression/
 │       ├── test_labels_normalized.csv
 │       └── label_stats.json
 │
-└── outputs/                 # 체크포인트 저장
+└── outputs/                 # 체크포인트 & 로그 저장
+    ├── clip_vision/
+    │   ├── best.pt
+    │   └── logs/
+    ├── clip_vision_partial/
+    │   ├── best.pt
+    │   └── logs/
+    ├── clip_vision_full/
+    │   ├── best.pt
+    │   └── logs/
+    └── clip_contrastive/
+        ├── best.pt
+        └── logs/
 ```
 
 ---
