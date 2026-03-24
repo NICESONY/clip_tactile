@@ -1,0 +1,29 @@
+# A-1: Encoder 전체 freeze, head만 학습
+# python train.py --config configs/regression.yaml
+
+experiment_name: clip_vision
+
+model:
+  pretrained_model_name: openai/clip-vit-base-patch32
+  output_dim: 6
+  hidden_dim: 256
+  dropout: 0.1
+  freeze_strategy: all
+
+train:
+  epochs: 3000
+  batch_size: 8
+  lr: 0.0003
+  weight_decay: 0.0001
+  num_workers: 4
+  image_size: 224
+  save_dir: outputs/clip_vision
+
+data:
+  train_csv: data/processed/train_labels_normalized.csv
+  train_image_dir: data/train/images
+  val_csv: data/processed/val_labels_normalized.csv
+  val_image_dir: data/val/images
+  test_csv: data/processed/test_labels_normalized.csv
+  test_image_dir: data/test/images
+  label_stats: data/processed/label_stats.json
