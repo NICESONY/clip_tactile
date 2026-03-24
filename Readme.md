@@ -72,7 +72,7 @@ clip_tactile/
 ## 초기 셋업
 
 ```bash
-cd clip_regression
+cd clip_tactile
 pip install -r requirements.txt
 
 # 데이터 연결 (같은 프로젝트 안에 있으면 자동 탐색)
