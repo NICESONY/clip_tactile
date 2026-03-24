@@ -1,6 +1,6 @@
 # CLIP Regression & Contrastive Retrieval
 
-촉각(tactile) 이미지 → 6축 force/torque 예측. 이 폴더 하나로 독립 실행 가능.
+촉각(tactile) 이미지 → 6축 force/torque 예측
 
 ---
 
