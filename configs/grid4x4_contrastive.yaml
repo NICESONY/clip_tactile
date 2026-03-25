@@ -16,6 +16,7 @@ train:
   lr: 0.00001
   weight_decay: 0.01
   num_workers: 4
+  loss_type: supervised
   save_dir: outputs/grid4x4_contrastive
 
 eval:

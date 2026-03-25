@@ -19,7 +19,7 @@ train:
   save_dir: outputs/clip_contrastive_padded
 
 eval:
-  candidate_pool: test
+  candidate_pool: all
   top_k: [1, 5]
 
 data:

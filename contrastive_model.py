@@ -86,3 +86,38 @@ def clip_contrastive_loss(logits_per_image, logits_per_text):
     loss_t2i = F.cross_entropy(logits_per_text, labels)
 
     return (loss_i2t + loss_t2i) / 2.0
+
+
+def supervised_contrastive_loss(logits_per_image, logits_per_text, text_labels):
+    """
+    Supervised Contrastive Loss: 같은 라벨 텍스트를 가진 쌍을 모두 positive로 처리.
+
+    Args:
+        logits_per_image: [B, B] image->text similarity
+        logits_per_text:  [B, B] text->image similarity
+        text_labels: list of str, 길이 B — 각 샘플의 텍스트 라벨
+
+    기존 CLIP loss는 대각선만 positive (1:1 매칭).
+    이 loss는 같은 텍스트를 가진 모든 쌍을 positive로 처리하여
+    grid 양자화처럼 중복 라벨이 많은 경우에 적합.
+    """
+    B = logits_per_image.size(0)
+    device = logits_per_image.device
+
+    # 같은 라벨이면 1, 다르면 0인 마스크 [B, B]
+    match_matrix = torch.zeros(B, B, device=device)
+    for i in range(B):
+        for j in range(B):
+            if text_labels[i] == text_labels[j]:
+                match_matrix[i, j] = 1.0
+
+    # soft target: 각 행에서 positive 개수로 나눠서 확률 분포로 만듦
+    # image->text: 각 이미지에 대해 같은 라벨인 텍스트들이 정답
+    target_i2t = match_matrix / match_matrix.sum(dim=1, keepdim=True)
+    # text->image: 각 텍스트에 대해 같은 라벨인 이미지들이 정답
+    target_t2i = match_matrix.t() / match_matrix.t().sum(dim=1, keepdim=True)
+
+    loss_i2t = (-target_i2t * F.log_softmax(logits_per_image, dim=1)).sum(dim=1).mean()
+    loss_t2i = (-target_t2i * F.log_softmax(logits_per_text, dim=1)).sum(dim=1).mean()
+
+    return (loss_i2t + loss_t2i) / 2.0

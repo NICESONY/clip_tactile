@@ -15,7 +15,7 @@ import torch
 from torch.utils.data import DataLoader
 from transformers import CLIPProcessor
 
-from contrastive_model import CLIPContrastive, clip_contrastive_loss
+from contrastive_model import CLIPContrastive, clip_contrastive_loss, supervised_contrastive_loss
 from contrastive_dataset import TactileContrastiveDataset
 from utils import set_seed, save_checkpoint, TrainLogger
 
@@ -25,7 +25,7 @@ def load_config(config_path):
         return yaml.safe_load(f)
 
 
-def train_one_epoch(model, loader, optimizer, device):
+def train_one_epoch(model, loader, optimizer, device, loss_type="standard"):
     model.train()
     running_loss = 0.0
 
@@ -39,7 +39,12 @@ def train_one_epoch(model, loader, optimizer, device):
         logits_per_image, logits_per_text = model(
             pixel_values, input_ids, attention_mask
         )
-        loss = clip_contrastive_loss(logits_per_image, logits_per_text)
+
+        if loss_type == "supervised":
+            text_labels = batch["text"]
+            loss = supervised_contrastive_loss(logits_per_image, logits_per_text, text_labels)
+        else:
+            loss = clip_contrastive_loss(logits_per_image, logits_per_text)
 
         loss.backward()
         optimizer.step()
@@ -50,7 +55,7 @@ def train_one_epoch(model, loader, optimizer, device):
 
 
 @torch.no_grad()
-def validate(model, loader, device):
+def validate(model, loader, device, loss_type="standard"):
     model.eval()
     running_loss = 0.0
     total_correct_i2t = 0
@@ -66,16 +71,29 @@ def validate(model, loader, device):
         logits_per_image, logits_per_text = model(
             pixel_values, input_ids, attention_mask
         )
-        loss = clip_contrastive_loss(logits_per_image, logits_per_text)
+
+        if loss_type == "supervised":
+            text_labels = batch["text"]
+            loss = supervised_contrastive_loss(logits_per_image, logits_per_text, text_labels)
+
+            # supervised accuracy: top-1 예측이 같은 라벨이면 correct
+            preds_i2t = logits_per_image.argmax(dim=1)
+            preds_t2i = logits_per_text.argmax(dim=1)
+            for i in range(B):
+                if text_labels[preds_i2t[i].item()] == text_labels[i]:
+                    total_correct_i2t += 1
+                if text_labels[preds_t2i[i].item()] == text_labels[i]:
+                    total_correct_t2i += 1
+        else:
+            loss = clip_contrastive_loss(logits_per_image, logits_per_text)
+
+            preds_i2t = logits_per_image.argmax(dim=1)
+            preds_t2i = logits_per_text.argmax(dim=1)
+            labels = torch.arange(B, device=device)
+            total_correct_i2t += (preds_i2t == labels).sum().item()
+            total_correct_t2i += (preds_t2i == labels).sum().item()
+
         running_loss += loss.item()
-
-        # batch 내 top-1 accuracy
-        preds_i2t = logits_per_image.argmax(dim=1)
-        preds_t2i = logits_per_text.argmax(dim=1)
-        labels = torch.arange(B, device=device)
-
-        total_correct_i2t += (preds_i2t == labels).sum().item()
-        total_correct_t2i += (preds_t2i == labels).sum().item()
         total_samples += B
 
     val_loss = running_loss / len(loader)
@@ -168,6 +186,8 @@ def main():
     )
 
     best_val_loss = float("inf")
+    loss_type = cfg["train"].get("loss_type", "standard")
+    print(f"Loss type: {loss_type}")
 
     logger = TrainLogger(
         log_dir=os.path.join(save_dir, "logs"),
@@ -176,8 +196,8 @@ def main():
     )
 
     for epoch in range(cfg["train"]["epochs"]):
-        train_loss = train_one_epoch(model, train_loader, optimizer, device)
-        val_loss, acc_i2t, acc_t2i = validate(model, val_loader, device)
+        train_loss = train_one_epoch(model, train_loader, optimizer, device, loss_type)
+        val_loss, acc_i2t, acc_t2i = validate(model, val_loader, device, loss_type)
 
         temp = model.temperature.item()
 
