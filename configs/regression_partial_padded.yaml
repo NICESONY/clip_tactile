@@ -1,0 +1,31 @@
+# A-2 Padded: Encoder 마지막 2개 layer + post_layernorm unfreeze (letterbox padding)
+# python train.py --config configs/regression_partial_padded.yaml
+
+experiment_name: clip_vision_partial_padded
+
+model:
+  pretrained_model_name: openai/clip-vit-base-patch32
+  output_dim: 6
+  hidden_dim: 256
+  dropout: 0.1
+  freeze_strategy: partial
+  unfreeze_layers: 2
+
+train:
+  epochs: 3000
+  batch_size: 8
+  lr: 0.00005
+  weight_decay: 0.001
+  num_workers: 4
+  image_size: 224
+  save_dir: outputs/clip_vision_partial_padded
+
+data:
+  train_csv: data/processed/train_labels_normalized.csv
+  train_image_dir: data/train/images_padded
+  val_csv: data/processed/val_labels_normalized.csv
+  val_image_dir: data/val/images_padded
+  test_csv: data/processed/test_labels_normalized.csv
+  test_image_dir: data/test/images_padded
+  label_stats: data/processed/label_stats.json
+  image_stats: data/processed/image_stats_padded.json

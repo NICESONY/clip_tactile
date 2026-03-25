@@ -8,6 +8,7 @@ Retrieval evaluation:
   4. 검색된 라벨 vs 실제 라벨 간 MAE / RMSE
 """
 
+import os
 import json
 import yaml
 import argparse
@@ -154,6 +155,15 @@ def main():
     candidate_embeds = candidate_embeds.to(device)  # [N, D]
     candidate_values = candidate_values.to(device)  # [N, 6]
 
+    # 이미지 mean/std 로드
+    image_stats_path = cfg["data"].get("image_stats")
+    image_mean, image_std = None, None
+    if image_stats_path and os.path.exists(image_stats_path):
+        with open(image_stats_path, "r") as f:
+            img_stats = json.load(f)
+        image_mean = img_stats["mean"]
+        image_std = img_stats["std"]
+
     # ── 2. 테스트 이미지 임베딩 & 검색 ──
     test_dataset = TactileContrastiveDataset(
         csv_path=cfg["data"]["test_csv"],
@@ -161,6 +171,8 @@ def main():
         label_cols=label_cols,
         image_processor=image_processor,
         tokenizer=tokenizer,
+        image_mean=image_mean,
+        image_std=image_std,
     )
     test_loader = DataLoader(
         test_dataset,

@@ -1,0 +1,33 @@
+# Grid 4x4: Contrastive (셀 평균 라벨 텍스트)
+# python contrastive_train.py --config configs/grid4x4_contrastive.yaml
+
+experiment_name: grid4x4_contrastive
+
+model:
+  pretrained_model_name: openai/clip-vit-base-patch32
+  freeze_image_encoder: false
+  freeze_text_encoder: false
+  learnable_temperature: true
+  init_temperature: 0.07
+
+train:
+  epochs: 300
+  batch_size: 64
+  lr: 0.00001
+  weight_decay: 0.01
+  num_workers: 4
+  save_dir: outputs/grid4x4_contrastive
+
+eval:
+  candidate_pool: all
+  top_k: [1, 5]
+
+data:
+  label_cols: ["dX", "dY", "dZ", "Fx", "Fy", "Fz"]
+  train_csv: data/processed/grid4x4_train_normalized.csv
+  train_image_dir: data/train/images
+  val_csv: data/processed/grid4x4_val_normalized.csv
+  val_image_dir: data/val/images
+  test_csv: data/processed/grid4x4_test_normalized.csv
+  test_image_dir: data/test/images
+  label_stats: data/processed/grid4x4_label_stats.json

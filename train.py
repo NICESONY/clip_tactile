@@ -1,4 +1,5 @@
 import os
+import json
 import yaml
 import argparse
 from tqdm import tqdm
@@ -91,11 +92,23 @@ def main():
 
     print(image_processor)
 
+    # 이미지 mean/std 로드
+    image_stats_path = cfg["data"].get("image_stats")
+    image_mean, image_std = None, None
+    if image_stats_path and os.path.exists(image_stats_path):
+        with open(image_stats_path, "r") as f:
+            img_stats = json.load(f)
+        image_mean = img_stats["mean"]
+        image_std = img_stats["std"]
+        print(f"Image stats loaded: mean={image_mean}, std={image_std}")
+
     train_dataset = TactileCoordinateDataset(
         csv_path=cfg["data"]["train_csv"],
         image_dir=cfg["data"]["train_image_dir"],
         output_dim=model_cfg["output_dim"],
         image_processor=image_processor,
+        image_mean=image_mean,
+        image_std=image_std,
     )
 
     val_dataset = TactileCoordinateDataset(
@@ -103,6 +116,8 @@ def main():
         image_dir=cfg["data"]["val_image_dir"],
         output_dim=model_cfg["output_dim"],
         image_processor=image_processor,
+        image_mean=image_mean,
+        image_std=image_std,
     )
 
     train_loader = DataLoader(

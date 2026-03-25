@@ -7,11 +7,14 @@ from torch.utils.data import Dataset
 
 
 class TactileCoordinateDataset(Dataset):
-    def __init__(self, csv_path, image_dir, output_dim=6, image_processor=None):
+    def __init__(self, csv_path, image_dir, output_dim=6, image_processor=None,
+                 image_mean=None, image_std=None):
         self.df = pd.read_csv(csv_path)
         self.image_dir = image_dir
         self.output_dim = output_dim
         self.image_processor = image_processor
+        self.image_mean = image_mean
+        self.image_std = image_std
 
         if image_processor is None:
             raise ValueError("image_processor must be provided for CLIP model.")
@@ -50,12 +53,19 @@ class TactileCoordinateDataset(Dataset):
         else:
             raise ValueError(f"Unsupported output_dim: {self.output_dim}")
 
-        processed = self.image_processor(
-            images=image,
-            return_tensors="pt",
-            image_mean=[0.41613302234013877, 0.34324077486038207, 0.3261217144838969],
-            image_std=[0.3449644943991341, 0.3238820460207181, 0.32351404629653335],
-        )
+        proc_kwargs = {"images": image, "return_tensors": "pt"}
+        if self.image_mean is not None:
+            # 패딩 모드: 이미 224x224이므로 resize/crop 불필요
+            proc_kwargs["image_mean"] = self.image_mean
+            proc_kwargs["image_std"] = self.image_std
+            proc_kwargs["do_center_crop"] = False
+            proc_kwargs["do_resize"] = False
+        else:
+            # 기존 모드: CLIP resize+crop + 프로젝트 커스텀 mean/std
+            proc_kwargs["image_mean"] = [0.41613302234013877, 0.34324077486038207, 0.3261217144838969]
+            proc_kwargs["image_std"] = [0.3449644943991341, 0.3238820460207181, 0.32351404629653335]
+
+        processed = self.image_processor(**proc_kwargs)
         image_tensor = processed["pixel_values"].squeeze(0)
 
         return {

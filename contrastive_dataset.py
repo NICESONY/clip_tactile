@@ -20,12 +20,15 @@ def label_to_text(row, label_cols):
 
 
 class TactileContrastiveDataset(Dataset):
-    def __init__(self, csv_path, image_dir, label_cols, image_processor, tokenizer):
+    def __init__(self, csv_path, image_dir, label_cols, image_processor, tokenizer,
+                 image_mean=None, image_std=None):
         self.df = pd.read_csv(csv_path)
         self.image_dir = image_dir
         self.label_cols = label_cols
         self.image_processor = image_processor
         self.tokenizer = tokenizer
+        self.image_mean = image_mean
+        self.image_std = image_std
 
         for col in ["image_name"] + label_cols:
             if col not in self.df.columns:
@@ -50,10 +53,19 @@ class TactileContrastiveDataset(Dataset):
         image = Image.open(image_path).convert("RGB")
 
         # image processing
-        pixel_values = self.image_processor(
-            images=image,
-            return_tensors="pt",
-        )["pixel_values"].squeeze(0)
+        proc_kwargs = {"images": image, "return_tensors": "pt"}
+        if self.image_mean is not None:
+            # 패딩 모드: 이미 224x224이므로 resize/crop 불필요
+            proc_kwargs["image_mean"] = self.image_mean
+            proc_kwargs["image_std"] = self.image_std
+            proc_kwargs["do_center_crop"] = False
+            proc_kwargs["do_resize"] = False
+        else:
+            # 기존 모드: CLIP resize+crop + 프로젝트 커스텀 mean/std
+            proc_kwargs["image_mean"] = [0.41613302234013877, 0.34324077486038207, 0.3261217144838969]
+            proc_kwargs["image_std"] = [0.3449644943991341, 0.3238820460207181, 0.32351404629653335]
+
+        pixel_values = self.image_processor(**proc_kwargs)["pixel_values"].squeeze(0)
 
         # text tokenization
         text = self.texts[idx]

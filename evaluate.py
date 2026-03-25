@@ -1,3 +1,4 @@
+import os
 import json
 import yaml
 import argparse
@@ -75,11 +76,22 @@ def main():
         model_cfg["pretrained_model_name"]
     ).image_processor
 
+    # 이미지 mean/std 로드
+    image_stats_path = cfg["data"].get("image_stats")
+    image_mean, image_std = None, None
+    if image_stats_path and os.path.exists(image_stats_path):
+        with open(image_stats_path, "r") as f:
+            img_stats = json.load(f)
+        image_mean = img_stats["mean"]
+        image_std = img_stats["std"]
+
     test_dataset = TactileCoordinateDataset(
         csv_path=cfg["data"]["test_csv"],
         image_dir=cfg["data"]["test_image_dir"],
         output_dim=output_dim,
         image_processor=image_processor,
+        image_mean=image_mean,
+        image_std=image_std,
     )
 
     test_loader = DataLoader(
