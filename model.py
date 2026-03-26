@@ -27,7 +27,7 @@ class CLIPVisionRegressor(nn.Module):
         self.vision_encoder = CLIPVisionModel.from_pretrained(pretrained_model_name)
         vision_hidden_dim = self.vision_encoder.config.hidden_size
 
-        # ── Freeze 전략 적용 ──
+        #  Freeze 전략 적용 
         if freeze_strategy == "all":
             for param in self.vision_encoder.parameters():
                 param.requires_grad = False

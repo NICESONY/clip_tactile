@@ -148,7 +148,7 @@ def main():
 
     print(f"Loaded checkpoint from {args.checkpoint} (epoch {ckpt['epoch']})")
 
-    # ── 1. 후보 라벨 풀 구축 ──
+    #  1. 후보 라벨 풀 구축 
     candidate_embeds, candidate_values, candidate_texts = build_candidate_pool(
         cfg, label_cols, tokenizer, device, model
     )
@@ -164,7 +164,7 @@ def main():
         image_mean = img_stats["mean"]
         image_std = img_stats["std"]
 
-    # ── 2. 테스트 이미지 임베딩 & 검색 ──
+    #  2. 테스트 이미지 임베딩 & 검색 
     test_dataset = TactileContrastiveDataset(
         csv_path=cfg["data"]["test_csv"],
         image_dir=cfg["data"]["test_image_dir"],
@@ -230,7 +230,7 @@ def main():
 
         total += pixel_values.size(0)
 
-    # ── 3. 결과 출력 ──
+    #  3. 결과 출력 
     print(f"\n{'='*60}")
     print(f"  CLIP Contrastive Retrieval Evaluation")
     print(f"  Test samples: {total}")
@@ -264,7 +264,7 @@ def main():
     for i, col in enumerate(label_cols):
         print(f"    {col:>4} : {col_mae[i].item():.6f}")
 
-    # ── 4. Original scale (inverse transform) ──
+    #  4. Original scale (inverse transform) 
     try:
         mean, std = load_label_stats(args.label_stats, label_cols, device)
         gt_orig = all_gt_values.to(device) * std.unsqueeze(0) + mean.unsqueeze(0)
@@ -301,7 +301,7 @@ def main():
     except KeyError as e:
         print(f"\n[label_stats.json key error: {e}]")
 
-    # ── 5. 샘플 출력 ──
+    #  5. 샘플 출력 
     print(f"\n{'='*60}")
     print("  Sample Retrieval Results (first 5)")
     print(f"{'='*60}")
